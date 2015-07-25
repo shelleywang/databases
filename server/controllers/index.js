@@ -6,28 +6,25 @@ var mysql = require('mysql');
 module.exports = {
   messages: {
     get: function (req, res) { // a function which handles a get request for all messages
-      runQuery("SELECT * FROM messages;", [], function(rows){
-        console.log("SELECT * FROM MESSAGES",JSON.stringify(rows));
-        res.status(200).send(JSON.stringify(rows));
+      runQuery("SELECT m.text, m.roomname, m.createdAt, m.updatedAt, u.username FROM messages m, users u WHERE m.userID = u.userID;", [], function(rows){
+        res.status(200).send({results:rows});
       });
     }, 
     post: function (req, res) { // a function which handles posting a message to the database
-      console.log(req.body);
       checkUser(req.body.username, function(userID) {
-        console.log(userID);
         runQuery("INSERT INTO messages (userID, text, roomname) values (?,?,?)", 
           [userID,req.body.text,req.body.roomname], function(){
             res.status(201).send();
           });
       });
     } 
-  },
+  }, 
 
   users: {
     // Ditto as above
     get: function (req, res) {
       runQuery("SELECT * FROM users;", [], function(rows){
-        res.status(200).send(JSON.stringify(rows));
+        res.status(200).send({results:rows});
       });
     },
     post: function (req, res) {
