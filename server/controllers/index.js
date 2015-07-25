@@ -6,34 +6,51 @@ var mysql = require('mysql');
 module.exports = {
   messages: {
     get: function (req, res) { // a function which handles a get request for all messages
-      runQuery("SELECT * FROM messages;");
+      runQuery("SELECT * FROM messages;", [], function(rows){
+        console.log("SELECT * FROM MESSAGES",JSON.stringify(rows));
+        res.status(200).send(JSON.stringify(rows));
+      });
     }, 
     post: function (req, res) { // a function which handles posting a message to the database
       console.log(req.body);
+      checkUser(req.body.username, function(userID) {
+        console.log(userID);
+        runQuery("INSERT INTO messages (userID, text, roomname) values (?,?,?)", 
+          [userID,req.body.text,req.body.roomname], function(){
+            res.status(201).send();
+          });
+      });
     } 
   },
 
   users: {
     // Ditto as above
     get: function (req, res) {
-      runQuery("SELECT * FROM users;");
+      runQuery("SELECT * FROM users;", [], function(rows){
+        res.status(200).send(JSON.stringify(rows));
+      });
     },
     post: function (req, res) {
-      console.log(req.body);
-      checkUser(req.body.username, function(exists) {
-        console.log('TESTING OUTSIDE EXISTS',req.body.username);
-        if (!exists) {
-          console.log('TESTING',req.body.username);
-          runQuery('INSERT INTO users (username) values (?)',[req.body.username]);
-        }
-      });
+      checkUser(req.body.username);
+      res.status(201).send();
     }
   }
 };
 
+
 var checkUser = function(username, callback) {
   runQuery("SELECT userID FROM users WHERE username = ?;",[username], function(rows) {
-    rows !== [] ? callback(true, rows[0]) : callback(false);
+    if (rows.length > 0){
+      if (callback){
+        callback(rows[0].userID);
+      }
+    }else{
+      runQuery('INSERT INTO users (username) values (?)',[username], function(rows){
+        if (callback){
+          callback(rows.insertId);
+        }
+      });
+    }
   });
 };
 
